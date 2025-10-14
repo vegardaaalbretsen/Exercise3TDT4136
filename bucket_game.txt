@@ -1,0 +1,4 @@
+1. We have given buckets A,B,C with two values per buckets
+2. The first player chooses bucket
+3. Second player chooses one of the numbers in the chosen bucket
+4. First player wants to maximize, second minimize
