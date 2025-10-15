@@ -1,24 +1,45 @@
 from copy import deepcopy
 import time
 
+"""Tic-tac-toe implementation with minimax and alpha-beta search.
+
+State is represented as (player_index, board) where board is a 3x3 list
+containing 0 for player 1's marks, 1 for player 2's marks, and None for
+empty cells. Actions are (row, col) pairs (0-based indices).
+
+This module includes:
+ - plain minimax (full depth)
+ - alpha-beta search (pruned minimax)
+
+The file also contains a small benchmark that times the first move and then
+has the two AIs play a game against each other using alpha-beta search.
+"""
+
 State = tuple[int, list[list[int | None]]]
 Action = tuple[int, int]
 
 class Game:
     def initial_state(self) -> State:
         return (0, [[None, None, None], [None, None, None], [None, None, None]])
+        """Return the initial empty board state with player 0 to move."""
     def to_move(self, state: State) -> int:
         player_index, _ = state
         return player_index
+        """Return the index (0 or 1) of the player to move in `state`."""
     def actions(self, state: State) -> list[Action]:
         _, board = state
         return [(r, c) for r in range(3) for c in range(3) if board[r][c] is None]
+        """Return a list of empty cell coordinates (row, col) available to play."""
     def result(self, state: State, action: Action) -> State:
         _, board = state
         r, c = action
         nb = deepcopy(board)
         nb[r][c] = self.to_move(state)
         return (self.to_move(state) + 1) % 2, nb
+        """Apply `action` (row, col) to `state` and return the new state.
+
+        The function makes a deep copy of the board to keep states immutable.
+        """
     def is_winner(self, state: State, player: int) -> bool:
         _, b = state
         rows = any(all(b[r][c] == player for c in range(3)) for r in range(3))
@@ -26,16 +47,19 @@ class Game:
         diag = all(b[i][i] == player for i in range(3)) or all(b[i][2-i] == player for i in range(3))
         return rows or cols or diag
     def is_terminal(self, state: State) -> bool:
+        """Return True when the state is a win for either player or the board is full."""
         _, b = state
         if self.is_winner(state, (self.to_move(state) + 1) % 2):
             return True
         return all(b[r][c] is not None for r in range(3) for c in range(3))
     def utility(self, state: State, player: int):
+        """Return +1 if `player` wins, -1 if opponent wins, otherwise 0 (draw)."""
         assert self.is_terminal(state)
         if self.is_winner(state, player): return 1
         if self.is_winner(state, (player + 1) % 2): return -1
         return 0
     def print(self, state: State):
+        """Print a human-readable ASCII representation of the board."""
         _, b = state
         print()
         for r in range(3):
@@ -53,8 +77,12 @@ class Game:
 # -------- Minimax (no pruning) --------
 def minimax_search(game: Game, state: State) -> Action | None:
     player = game.to_move(state)
-    v, move = _max_plain(game, state, player)
+    _, move = _max_plain(game, state, player)
     return move
+    """Return the best action found by full-depth minimax for the player to move.
+
+    Returns None when `state` is terminal.
+    """
 
 def _max_plain(game: Game, state: State, player: int) -> tuple[float, Action | None]:
     if game.is_terminal(state): return game.utility(state, player), None
@@ -63,6 +91,7 @@ def _max_plain(game: Game, state: State, player: int) -> tuple[float, Action | N
         v2, _ = _min_plain(game, game.result(state, a), player)
         if v2 > v: v, best = v2, a
     return v, best
+    """Maximizer for plain minimax: returns (value, best_action)."""
 
 def _min_plain(game: Game, state: State, player: int) -> tuple[float, Action | None]:
     if game.is_terminal(state): return game.utility(state, player), None
@@ -71,12 +100,17 @@ def _min_plain(game: Game, state: State, player: int) -> tuple[float, Action | N
         v2, _ = _max_plain(game, game.result(state, a), player)
         if v2 < v: v, best = v2, a
     return v, best
+    """Minimizer for plain minimax: returns (value, best_action)."""
 
 # -------- Alpha–beta --------
 def alfa_beta_search(game: Game, state: State) -> Action | None:
     player = game.to_move(state)
     _, move = _max_ab(game, state, player, float("-inf"), float("inf"))
     return move
+    """Alpha-beta search wrapper that returns the selected action.
+
+    Returns None for terminal states.
+    """
 
 def _max_ab(game: Game, state: State, player: int, alpha: float, beta: float) -> tuple[float, Action | None]:
     if game.is_terminal(state): return game.utility(state, player), None
@@ -88,6 +122,7 @@ def _max_ab(game: Game, state: State, player: int, alpha: float, beta: float) ->
             alpha = max(alpha, v)
         if v >= beta: break
     return v, best
+    """Maximizer used by alpha-beta search. Returns (value, best_action)."""
 
 def _min_ab(game: Game, state: State, player: int, alpha: float, beta: float) -> tuple[float, Action | None]:
     if game.is_terminal(state): return game.utility(state, player), None
@@ -99,6 +134,7 @@ def _min_ab(game: Game, state: State, player: int, alpha: float, beta: float) ->
             beta = min(beta, v)
         if v <= alpha: break
     return v, best
+    """Minimizer used by alpha-beta search. Returns (value, best_action)."""
 
 # -------- Timing first move and auto vs auto --------
 game = Game()
@@ -124,5 +160,6 @@ while not game.is_terminal(state):
     player = game.to_move(state)
     action = alfa_beta_search(game, state)
     print(f"P{player+1}'s action: {action}")
+    assert action is not None
     state = game.result(state, action)
     game.print(state)
