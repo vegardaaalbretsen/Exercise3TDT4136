@@ -1,3 +1,4 @@
 1. Start with N items
 2. Take turns either decrementing N or replacing with N/2 rounded down
 3. The player whos turn starts with 0 items wins.
+

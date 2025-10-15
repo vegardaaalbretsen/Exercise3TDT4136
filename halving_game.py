@@ -62,11 +62,11 @@ def max_value(game: Game, state: State, player: int) -> tuple[float, Action | No
 def min_value(game:Game, state: State, player: int) -> tuple[float, Action | None]:
     if game.is_terminal(state):
         return game.utility(state,player), None
-    v = float("-inf")
+    v = float("inf")
     best: Action | None = None
     for a in game.actions(state):
         v2, _ = max_value(game, game.result(state,a), player)
-        if v2 > v: 
+        if v2 < v: 
             v, best = v2, a
     return v, best
     

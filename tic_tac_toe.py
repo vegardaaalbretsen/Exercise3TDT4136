@@ -46,7 +46,7 @@ class Game:
             return True
         return all(board[row][col] is not None for row in range(3) for col in range(3))
 
-    def utility(self, state, player):
+    def utility(self, state: State, player: int):
         assert self.is_terminal(state)
         if self.is_winner(state, player):
             return 1
@@ -75,3 +75,64 @@ class Game:
                 print('The game is a draw')
         else:
             print(f'It is P{self.to_move(state)+1}\'s turn to move')
+
+def alfa_beta_search(game:Game,state:State):
+    player = game.to_move(state)
+    _,move = max_value(game,state,player,float("-inf"),float("inf"))
+    return move
+def max_value(game: Game, state: State, player: int, alpha: float, beta: float) -> tuple[float, Action | None]:
+    if game.is_terminal(state):
+        return game.utility(state, player), None
+    v = float("-inf")
+    best: Action | None = None
+    for a in game.actions(state):
+        v2, _ = min_value(game, game.result(state, a), player, alpha, beta)
+        if v2 > v:
+            v, best = v2, a
+            alpha = max(alpha, v)
+        if v >= beta:
+            return v, best
+    return v, best
+
+def min_value(game:Game, state: State, player: int, alpha: float, beta: float) -> tuple[float, Action | None]:
+    if game.is_terminal(state):
+        return game.utility(state,player), None
+    v = float("inf")
+    best: Action | None = None
+    for a in game.actions(state):
+        v2, _ = max_value(game, game.result(state,a), player, alpha, beta)
+        if v2 < v: 
+            v, best = v2, a
+            beta = min(beta, v)
+        if v <= alpha:
+            return v, best
+    return v, best
+
+
+def get_human_action(game: Game, state: State) -> Action:
+    legal = set(game.actions(state))
+    while True:
+        s = input("Your move as 'row col' with 0–2 0–2: ").strip().split()
+        if len(s) == 2 and all(t.isdigit() for t in s):
+            a = (int(s[0]), int(s[1]))
+            if a in legal:
+                return a
+        print("Invalid. Try again.")
+
+# choose side: X=P1 or O=P2
+side = input("Play as X (P1) or O (P2)? ").strip().lower()
+human = 0 if side.startswith("x") else 1
+
+game = Game()
+state = game.initial_state()
+game.print(state)
+
+while not game.is_terminal(state):
+    player = game.to_move(state)
+    if player == human:
+        action = get_human_action(game, state)
+    else:
+        action = alfa_beta_search(game, state)  # computer move
+    print(f"P{player+1}'s action: {action}")
+    state = game.result(state, action)
+    game.print(state)
